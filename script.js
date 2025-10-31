@@ -671,25 +671,62 @@ async function runDuplicateCheck() {
 
     log('Iniciando verificação de duplicatas...', 'info');
 
-    // 1. "Busca Automática" - Identifica colunas-chave
+    // 1. "Busca Automática" - Identifica colunas-chave da planilha
     let mappingGuess = {};
     columnHeaders.forEach(h => { mappingGuess[h] = guessMapping(h); });
     const findHeader = (key) => Object.keys(mappingGuess).find(k => mappingGuess[k] === key);
 
+    // --- INÍCIO DA CORREÇÃO: Busca dinâmica de Chaves ---
+    // Procura dinamicamente as chaves de CPF e CNPJ nos campos do Pipedrive
+    const findPdFieldKey = (entity, ...names) => {
+        const field = pdFields[entity].find(f => 
+            names.some(n => f.name.toLowerCase().includes(n.toLowerCase()))
+        );
+        return field ? field.key : null;
+    };
+
+    // Tenta encontrar as chaves reais de CPF e CNPJ
+    const CPF_KEY = findPdFieldKey('person', 'cpf');
+    const CNPJ_KEY = findPdFieldKey('organization', 'cnpj');
+    // --- FIM DA CORREÇÃO ---
+
+    // Monta as chaves de busca dinamicamente
     const searchKeys = {
         'email:person': findHeader('email:person'),
         'phone:person': findHeader('phone:person'),
-        '8e10080613149524022cf363b811867c2d142d76:person': findHeader('8e10080613149524022cf363b811867c2d142d76:person'), // CPF
-        'name:organization': findHeader('name:organization'),
-        '96ff76d1e4c3b5b15b216963f413c6f240c5f513:organization': findHeader('96ff76d1e4c3b5b15b216963f413c6f240c5f513:organization') // CNPJ
+        'name:organization': findHeader('name:organization')
     };
+    
+    let cpfCol = 'N/A', cnpjCol = 'N/A';
+    
+    if (CPF_KEY) {
+        // Tenta achar a coluna que o guessMapping encontrou para essa chave
+        // Nota: guessMapping ainda vai usar a chave antiga, precisamos achar pelo NOME do campo
+        const cpfHeader = Object.keys(mappingGuess).find(k => guessMapping(k).includes('8e10080613149524022cf363b811867c2d142d76')); // Acha a coluna pelo CPF antigo
+        if(cpfHeader) {
+            searchKeys[CPF_KEY] = cpfHeader;
+            cpfCol = cpfHeader;
+        }
+    } else {
+        log('Campo "CPF" (Pessoa) não encontrado no Pipedrive. Verificação de CPF será pulada.', 'warn');
+    }
+
+    if (CNPJ_KEY) {
+        const cnpjHeader = Object.keys(mappingGuess).find(k => guessMapping(k).includes('96ff76d1e4c3b5b15b216963f413c6f240c5f513')); // Acha a coluna pelo CNPJ antigo
+        if(cnpjHeader) {
+            searchKeys[CNPJ_KEY] = cnpjHeader;
+            cnpjCol = cnpjHeader;
+        }
+    } else {
+        log('Campo "CNPJ" (Organização) não encontrado no Pipedrive. Verificação de CNPJ será pulada.', 'warn');
+    }
 
     log('--- Colunas-Chave Identificadas (Busca Automática) ---', 'info');
     log(`Busca por Email (Pessoa) na coluna: ${searchKeys['email:person'] || 'N/A'}`);
     log(`Busca por Telefone (Pessoa) na coluna: ${searchKeys['phone:person'] || 'N/A'}`);
-    log(`Busca por CPF (Pessoa) na coluna: ${searchKeys['8e10080613149524022cf363b811867c2d142d76:person'] || 'N/A'}`);
+    log(`Busca por CPF (Pessoa) na coluna: ${cpfCol} (Chave API: ${CPF_KEY || 'N/A'})`);
     log(`Busca por Nome (Organização) na coluna: ${searchKeys['name:organization'] || 'N/A'}`);
-    log(`Busca por CNPJ (Organização) na coluna: ${searchKeys['96ff76d1e4c3b5b15b216963f413c6f240c5f513:organization'] || 'N/A'}`);
+    log(`Busca por CNPJ (Organização) na coluna: ${cnpjCol} (Chave API: ${CNPJ_KEY || 'N/A'})`);
     log('----------------------------------------------------', 'info');
     
     let duplicatesFound = [];
@@ -706,11 +743,12 @@ async function runDuplicateCheck() {
         dom.duplicateProgressText.textContent = `Verificando linha ${i + 1} de ${parsedData.length}`;
         
         try {
-            const duplicateResult = await searchDuplicate(row, searchKeys);
+            // Passa as chaves dinâmicas para a função de busca
+            const duplicateResult = await searchDuplicate(row, searchKeys, CPF_KEY, CNPJ_KEY);
             
             if (duplicateResult) {
                 duplicatesFound.push(duplicateResult);
-                const matchTypes = duplicateResult.matches.map(m => m.type || m.entity_type).join(', ');
+                const matchTypes = duplicateResult.matches.map(m => (m.type || m.entity_type || 'item')).join(', ');
                 log(`Linha ${i + 1}: Correspondência encontrada (${matchTypes})`, 'warn');
             } else {
                 nonDuplicates.push(row);
@@ -738,20 +776,21 @@ async function runDuplicateCheck() {
     dom.duplicateNextStepBtn.dataset.duplicates = JSON.stringify(duplicatesFound);
     
     if (duplicatesFound.length > 0) {
-        log(`Clique em 'Próximo' para ajustar as ${duplicatesFound.length} duplicatas.`, 'info');
-        dom.duplicateNextStepBtn.textContent = 'Próximo: Ajustar Duplicatas';
+        log(`Clique em 'Próximo' para revisar as ${duplicatesFound.length} duplicatas.`, 'info');
+        dom.duplicateNextStepBtn.textContent = 'Próximo: Revisar Duplicatas';
     } else {
         log('Nenhuma duplicata encontrada. Clique em \'Próximo\' para continuar.', 'info');
         dom.duplicateNextStepBtn.textContent = 'Próximo: Mapeamento';
     }
 }
 
-async function searchDuplicate(row, keys) {
+async function searchDuplicate(row, keys, cpfKey, cnpjKey) { // Recebe as chaves dinâmicas
     const promises = [];
     
     const addSearch = (col, endpoint, field, type) => {
         const value = row[col];
-        if (col && value) {
+        // Adiciona verificação para 'field' não ser nulo
+        if (col && value && field) { 
             promises.push(
                 pipedriveApiCall(`${endpoint}?term=${encodeURIComponent(value)}&fields=${field}&exact_match=true&limit=1`)
                     .then(result => ({ ...result, searchType: type, searchTerm: value }))
@@ -759,11 +798,21 @@ async function searchDuplicate(row, keys) {
         }
     };
 
+    // --- CORREÇÃO APLICADA ---
+    // Campos Padrão
     addSearch(keys['email:person'], '/persons/search', 'email', 'Pessoa (Email)');
     addSearch(keys['phone:person'], '/persons/search', 'phone', 'Pessoa (Telefone)');
-    addSearch(keys['8e10080613149524022cf363b811867c2d142d76:person'], '/persons/search', `custom_fields.${'8e10080613149524022cf363b811867c2d142d76'}`, 'Pessoa (CPF)');
     addSearch(keys['name:organization'], '/organizations/search', 'name', 'Org (Nome)');
-    addSearch(keys['96ff76d1e4c3b5b15b216963f413c6f240c5f513:organization'], '/organizations/search', `custom_fields.${'96ff76d1e4c3b5b15b216963f413c6f240c5f513'}`, 'Org (CNPJ)');
+    
+    // Campos Dinâmicos (CPF/CNPJ)
+    // Usa as chaves reais (cpfKey, cnpjKey) e passa apenas o HASH para o 'field'
+    if (cpfKey) {
+        addSearch(keys[cpfKey], '/persons/search', cpfKey, 'Pessoa (CPF)');
+    }
+    if (cnpjKey) {
+        addSearch(keys[cnpjKey], '/organizations/search', cnpjKey, 'Org (CNPJ)');
+    }
+    // --- FIM DA CORREÇÃO ---
 
     if (promises.length === 0) return null;
 
@@ -779,7 +828,9 @@ async function searchDuplicate(row, keys) {
     });
 
     if (matches.length > 0) {
-        return { rowData: row, matches: matches };
+        // Remove duplicatas internas (ex: achou a mesma pessoa por email e CPF)
+        const uniqueMatches = Array.from(new Map(matches.map(item => [item.id, item])).values());
+        return { rowData: row, matches: uniqueMatches };
     }
     return null;
 }
@@ -1766,4 +1817,5 @@ window.addEventListener('DOMContentLoaded', () => {
     dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
     dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
+
 
