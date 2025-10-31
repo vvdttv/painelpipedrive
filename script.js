@@ -933,16 +933,27 @@ function populateMappingSection(headers) {
 
 function guessMapping(header) {
     const h = header.toLowerCase().replace(/[^a-z0-9]/gi, '');
-    if (h.includes('razaosocial')) return 'name:organization';
-    if (h.includes('cnpj')) return '96ff76d1e4c3b5b15b216963f413c6f240c5f513:organization';
+
+    // Organização
+    if (h.includes('razaosocial') || h.includes('nomefantasia') || h.includes('organizacao')) return 'name:organization';
+    if (h.includes('cnpj')) return '96ff76d1e4c3b5b15b216963f413c6f240c5f513:organization'; // Chave ANTIGA (para referência)
+    if (h.includes('telefone') && (h.includes('org') || h.includes('empresa'))) return 'phone:organization';
+    if (h.includes('endereco') || h.includes('cep') || h.includes('cidade') || h.includes('estado')) return 'address:organization';
+
+    // Pessoa
+    if (h.includes('pessoa') || h.includes('contato') || h.includes('nomesocio') || h.includes('nomecontato')) return 'name:person';
+    if (h.includes('email')) return 'email:person'; // Pega todos os emails
+    if (h.includes('fone') || h.includes('celular') || (h.includes('telefone') && !h.includes('org'))) return 'phone:person';
+    if (h.includes('cpf') && !h.includes('cnpj')) return '8e10080613149524022cf363b811867c2d142d76:person'; // Chave ANTIGA (para referência)
+
+    // Negócio
+    if (h.includes('valor')) return 'value:deal';
+    if (h.includes('negocio') || h.includes('oportunidade')) return 'title:deal';
+
+    // CNAE (Exemplos)
     if (h.includes('cnaeprincipal') && !h.includes('descricao')) return '34f0c609a3c10b2460b5f8e5f78c106d87e07e0c:organization';
     if (h.includes('descricaocnae')) return 'cnae_descricao'; // Assumindo que você tem esse campo
-    if (h.includes('nomesocio') || h.includes('nomecontato')) return 'name:person';
-    if (h.includes('emailsocio') || h.includes('emailcontato')) return 'email:person';
-    if (h.includes('celularsocio') || h.includes('telefonecontato')) return 'phone:person';
-    if (h.includes('cpfsocio')) return '8e10080613149524022cf363b811867c2d142d76:person';
-    if (h.includes('valor')) return 'value:deal';
-    if (h.includes('cep') || h.includes('cidade') || h.includes('estado')) return 'address:organization';
+    
     return 'ignore';
 }
 
@@ -1817,5 +1828,6 @@ window.addEventListener('DOMContentLoaded', () => {
     dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
     dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
+
 
 
