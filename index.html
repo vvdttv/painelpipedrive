@@ -116,6 +116,11 @@
                                 <div id="duplicate-log-container" class="bg-white p-4 rounded-md max-h-48 overflow-y-auto text-sm text-gray-700 border border-gray-200">
                                     <p>Logs da verificação de duplicatas...</p>
                                 </div>
+                                <div id="duplicate-next-step-container" class="hidden flex justify-end mt-6">
+                                    <button id="duplicate-next-step-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Próximo: Mapeamento
+                                    </button>
+                                </div>
                             </section>
 
                             <section id="step-2-5-adjustment" class="bg-gray-50 p-6 rounded-lg shadow-inner hidden space-y-4">
@@ -174,53 +179,61 @@
 
                                 <div class="space-y-4">
                                     <label class="block text-sm font-medium text-gray-700">Lógica de Negócio (Deal)</label>
-                                    <div class="flex items-center space-x-4">
-                                        <label class="inline-flex items-center">
+                                    
+                                    <div class="flex flex-col space-y-3">
+
+                                        <label class="flex items-center">
                                             <input type="radio" name="deal-logic" value="create-open" checked class="form-radio h-4 w-4 text-blue-600"/>
                                             <span class="ml-2 text-gray-700">Criar Negócio Aberto</span>
                                         </label>
-                                        <label class="inline-flex items-center">
+
+                                        <label class="flex items-center">
                                             <input type="radio" name="deal-logic" value="create-if-not-won-or-lost" class="form-radio h-4 w-4 text-blue-600"/>
                                             <span class="ml-2 text-gray-700">Criar Negócio SE não for 'Ganho' ou 'Perdido' (da planilha)</span>
                                         </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="deal-logic" value="create-if-status-is" class="form-radio h-4 w-4 text-blue-600"/>
-                                            <span class="ml-2 text-gray-700">Criar Negócio APENAS SE status for (da planilha):</span>
-                                        </label>
-                                    </div>
-                                    <div id="deal-logic-status-options" class="flex items-center space-x-4 pl-8 hidden">
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="deal-status-choice" id="deal-status-won" value="won" class="form-radio h-4 w-4 text-green-600"/>
-                                            <span class="ml-2 text-gray-700">Ganho</span>
-                                        </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="deal-status-choice" id="deal-status-lost" value="lost" class="form-radio h-4 w-4 text-red-600"/>
-                                            <span class="ml-2 text-gray-700">Perdido</span>
-                                        </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="deal-status-choice" id="deal-status-open" value="open" checked class="form-radio h-4 w-4 text-blue-600"/>
-                                            <span class="ml-2 text-gray-700">Aberto</span>
-                                        </label>
-                                    </div>
-                                    <div class="flex items-center space-x-4 mt-2">
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="deal-logic" value="create-if-status-is-not" class="form-radio h-4 w-4 text-blue-600"/>
-                                            <span class="ml-2 text-gray-700">Criar Negócio APENAS SE status NÃO for (da planilha):</span>
-                                        </label>
-                                    </div>
-                                    <div id="deal-logic-not-status-options" class="flex items-center space-x-4 pl-8 hidden">
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="deal-not-status-choice" id="deal-not-status-won" value="won" checked class="form-radio h-4 w-4 text-green-600"/>
-                                            <span class="ml-2 text-gray-700">Ganho</span>
-                                        </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="deal-not-status-choice" id="deal-not-status-lost" value="lost" class="form-radio h-4 w-4 text-red-600"/>
-                                            <span class="ml-2 text-gray-700">Perdido</span>
-                                        </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" name="deal-not-status-choice" id="deal-not-status-open" value="open" class="form-radio h-4 w-4 text-blue-600"/>
-                                            <span class="ml-2 text-gray-700">Aberto</span>
-                                        </label>
+
+                                        <div>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="deal-logic" value="create-if-status-is" class="form-radio h-4 w-4 text-blue-600"/>
+                                                <span class="ml-2 text-gray-700">Criar Negócio APENAS SE status for (da planilha):</span>
+                                            </label>
+                                            <div id="deal-logic-status-options" class="flex items-center space-x-4 pl-8 pt-2 hidden">
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="deal-status-choice" id="deal-status-won" value="won" class="form-radio h-4 w-4 text-green-600"/>
+                                                    <span class="ml-2 text-gray-700">Ganho</span>
+                                                </label>
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="deal-status-choice" id="deal-status-lost" value="lost" class="form-radio h-4 w-4 text-red-600"/>
+                                                    <span class="ml-2 text-gray-700">Perdido</span>
+                                                </label>
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="deal-status-choice" id="deal-status-open" value="open" checked class="form-radio h-4 w-4 text-blue-600"/>
+                                                    <span class="ml-2 text-gray-700">Aberto</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="deal-logic" value="create-if-status-is-not" class="form-radio h-4 w-4 text-blue-600"/>
+                                                <span class="ml-2 text-gray-700">Criar Negócio APENAS SE status NÃO for (da planilha):</span>
+                                            </label>
+                                            <div id="deal-logic-not-status-options" class="flex items-center space-x-4 pl-8 pt-2 hidden">
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="deal-not-status-choice" id="deal-not-status-won" value="won" checked class="form-radio h-4 w-4 text-green-600"/>
+                                                    <span class="ml-2 text-gray-700">Ganho</span>
+                                                </label>
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="deal-not-status-choice" id="deal-not-status-lost" value="lost" class="form-radio h-4 w-4 text-red-600"/>
+                                                    <span class="ml-2 text-gray-700">Perdido</span>
+                                                </label>
+                                                <label class="flex items-center">
+                                                    <input type="radio" name="deal-not-status-choice" id="deal-not-status-open" value="open" class="form-radio h-4 w-4 text-blue-600"/>
+                                                    <span class="ml-2 text-gray-700">Aberto</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
 
@@ -571,3 +584,4 @@
    
 </body>
 </html>
+
