@@ -78,6 +78,8 @@ const dom = {
     duplicateProgressBar: document.getElementById('duplicate-progress-bar'),
     duplicateProgressText: document.getElementById('duplicate-progress-text'),
     duplicateLogContainer: document.getElementById('duplicate-log-container'),
+    duplicateNextStepContainer: document.getElementById('duplicate-next-step-container'),
+    duplicateNextStepBtn: document.getElementById('duplicate-next-step-btn'),
 
     // Etapa 2.5 (Ajuste)
     step2_5Adjustment: document.getElementById('step-2-5-adjustment'),
@@ -526,6 +528,18 @@ function resetImporter() {
 // Navegação entre etapas
 function setupNavigation() {
     // Etapa 1 -> 2 (Automático no handleFileLoad)
+
+    // Etapa 2 -> 2.5 ou 3 (Botão pós-verificação)
+    dom.duplicateNextStepBtn.addEventListener('click', () => {
+        const duplicates = JSON.parse(dom.duplicateNextStepBtn.dataset.duplicates || '[]');
+        dom.duplicateNextStepContainer.classList.add('hidden'); // Esconde o botão
+        
+        if (duplicates.length > 0) {
+            showDuplicateAdjustmentScreen(duplicates);
+        } else {
+            showMappingScreen();
+        }
+    });
     
     // Etapa 2.5 -> 3 (Pular)
     dom.adjustmentSkipBtn.addEventListener('click', () => {
@@ -717,14 +731,18 @@ async function runDuplicateCheck() {
     // Atualiza a lista principal de dados. Apenas não-duplicatas seguirão para importação.
     parsedData = nonDuplicates; 
 
+    // Mostra o botão de avançar
+    dom.duplicateNextStepContainer.classList.remove('hidden');
+    
+    // Armazena o resultado para o botão usar
+    dom.duplicateNextStepBtn.dataset.duplicates = JSON.stringify(duplicatesFound);
+    
     if (duplicatesFound.length > 0) {
-        log(`Exibindo tela de ajuste para ${duplicatesFound.length} duplicatas...`, 'info');
-        await sleep(1000);
-        showDuplicateAdjustmentScreen(duplicatesFound);
+        log(`Clique em 'Próximo' para ajustar as ${duplicatesFound.length} duplicatas.`, 'info');
+        dom.duplicateNextStepBtn.textContent = 'Próximo: Ajustar Duplicatas';
     } else {
-        log('Nenhuma duplicata encontrada. Avançando para o mapeamento...', 'info');
-        await sleep(1000);
-        showMappingScreen();
+        log('Nenhuma duplicata encontrada. Clique em \'Próximo\' para continuar.', 'info');
+        dom.duplicateNextStepBtn.textContent = 'Próximo: Mapeamento';
     }
 }
 
@@ -837,17 +855,18 @@ function populateMappingSection(headers) {
         ...pdFields.deal
     ].sort((a, b) => a.name.localeCompare(b.name));
 
-    const optionsHtml = allPdFields.map(field => `<option value="${field.key}">${field.name}</option>`).join('');
+    // A optionsHtml não é mais necessária aqui, a lógica foi movida para dentro do loop
 
     headers.forEach(header => {
-        const guessedKey = guessMapping(header);
+        // const guessedKey = guessMapping(header); // REMOVIDO (Req. 2)
         const fieldHtml = `
             <div class="grid grid-cols-2 gap-4 items-center p-3 border-b border-gray-200">
                 <label class="text-sm font-medium text-gray-800 truncate" title="${header}">${header}</label>
                 <div>
                     <select class="mapping-select block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" data-csv-header="${header}">
                         ${allPdFields.map(field => 
-                            `<option value="${field.key}" ${guessedKey === field.key ? 'selected' : ''}>${field.name}</option>`
+                            // Req. 2: Define 'Ignorar' como padrão
+                            `<option value="${field.key}" ${field.key === 'ignore' ? 'selected' : ''}>${field.name}</option>`
                         ).join('')}
                     </select>
                 </div>
@@ -855,11 +874,10 @@ function populateMappingSection(headers) {
         dom.mappingContainer.innerHTML += fieldHtml;
     });
 
-    // Inicializa Choices.js para os selects de mapeamento (pode ser lento com muitos)
-    // Se for lento, remova as 3 linhas abaixo e use selects nativos.
-    // document.querySelectorAll('.mapping-select').forEach(select => {
-    //     initChoices(select);
-    // });
+    // Req. 1: Habilita a pesquisa nos selects
+    document.querySelectorAll('.mapping-select').forEach(select => {
+        initChoices(select);
+    });
 }
 
 function guessMapping(header) {
@@ -1748,3 +1766,4 @@ window.addEventListener('DOMContentLoaded', () => {
     dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
     dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
+
