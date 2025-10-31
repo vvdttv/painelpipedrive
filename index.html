@@ -1,103 +1,573 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-        <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Importador de leads para o pipedrive via API</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-    
-        <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importador de leads para o pipedrive via API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+   
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+   
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
 
     <link rel="stylesheet" href="style.css">
 
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
-        
-                <header class="mb-8">
-            <h1 class="text-4xl font-bold text-gray-800">Importador de leads para o pipedrive via API</h1>
-            <p class="text-lg text-gray-600">Importe, mapeie e distribua seus leads para o Pipedrive, usando planilhas nutridas e enriquecidas, tanto em csv quanto em xlsx.</p>
-        </header>
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+       
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Importador de leads para o pipedrive via API</h1>
+            <p class="text-lg text-gray-600">Importe, mapeie e distribua seus leads para o Pipedrive, usando planilhas nutridas e enriquecidas, tanto em csv quanto em xlsx.</p>
+        </header>
 
-                <div id="global-message" class="hidden p-4 rounded-lg mb-6"></div>
+        <div id="global-message" class="hidden p-4 rounded-lg mb-6"></div>
 
-                <div class="bg-white rounded-lg shadow-2xl p-6 md:p-8 space-y-8">
+        <div class="bg-white rounded-lg shadow-2xl p-6 md:p-8 space-y-8">
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="api-token" class="block text-sm font-medium text-gray-700">API Token Pipedrive</label>
-                    <input type="password" id="api-token" class="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" value="a93117dbad6f841d401a6af210a70ad090548d6b">
-                </div>
-                <div>
-                    <label for="company-domain" class="block text-sm font-medium text-gray-700">Domínio da Empresa (Pipedrive URL)</label>
-                    <input type="text" id="company-domain" class="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="ex: suaempresa (de suaempresa.pipedrive.com)" value="https://iev.pipedrive.com/">
-                </div>
-            </div>
+            <div id="api-connect-section" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="api-token" class="block text-sm font-medium text-gray-700">API Token Pipedrive</label>
+                        <input type="password" id="api-token" class="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" value="a93117dbad6f841d401a6af210a70ad090548d6b">
+                    </div>
+                    <div>
+                        <label for="company-domain" class="block text-sm font-medium text-gray-700">Domínio da Empresa (Pipedrive URL)</label>
+                        <input type="text" id="company-domain" class="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="ex: suaempresa (de suaempresa.pipedrive.com)" value="iev.pipedrive.com">
+                    </div>
+                </div>
+                <button id="connect-api-btn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Conectar ao Pipedrive
+                </button>
+                <div id="api-loader" class="hidden items-center justify-center space-x-2 mt-4">
+                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                    <span class="text-gray-600 font-medium">Conectando...</span>
+                </div>
+                <div id="api-message" class="hidden p-3 rounded-md mt-4 text-sm"></div>
+            </div>
+            <div id="main-content" class="hidden space-y-8">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                        <button id="tab-btn-importer" class="tab-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Importador de Leads
+                        </button>
+                        <button id="tab-btn-verticals" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Gestão de Verticais
+                        </button>
+                        <button id="tab-btn-admin" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Admin Pipedrive
+                        </button>
+                    </nav>
+                </div>
+               
+                <div id="tabs-content">
 
-                        
-                        <div id="global-loader" class="hidden items-center justify-center space-x-2">
-                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
-                <span class="text-gray-600 font-medium">Carregando dados da sua conta Pipedrive...</span>
-            </div>
-            
-                        <div id="main-content" class="hidden space-y-8">
-                                <div class="border-b border-gray-200">
-                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                        <button id="tab-btn-importer" class="tab-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                            Importador de Leads
-                        </button>
-                        <button id="tab-btn-verticals" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                            Gestão de Verticais
-                        </button>
-                        <button id="tab-btn-admin" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                            Admin Pipedrive
-                        </button>
-                    </nav>
-                </div>
-                
-                                <div id="tabs-content">
+                    <div id="tab-importer" class="space-y-8">
+                       
+                        <div class="border-b border-gray-200">
+                            <nav class="-mb-px flex space-x-8" aria-label="Sub-Tabs">
+                                <button id="importer-subtab-btn-load" class="importer-subtab-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    Carregar Arquivos
+                                </button>
+                                <button id="importer-subtab-btn-history" class="importer-subtab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    Histórico
+                                </button>
+                            </nav>
+                        </div>
+                       
+                        <div id="importer-subtabs-content" class="pt-0 space-y-8">
+                            <div id="importer-subtab-load" class="space-y-6">
+                                <section id="step-1-upload" class="bg-gray-50 p-6 rounded-lg shadow-inner">
+                                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">1. Carregar Planilha</h2>
+                                    <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                                        <input type="file" id="csv-file" accept=".csv, .xlsx" class="block w-full text-sm text-gray-900 bg-gray-100 rounded-lg border border-gray-300 cursor-pointer focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                                        <button id="load-csv-btn" class="flex-shrink-0 bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out w-full md:w-auto">
+                                            Carregar
+                                        </button>
+                                    </div>
+                                    <p id="file-status" class="mt-3 text-sm text-gray-600"></p>
+                                    <div id="file-preview" class="mt-4 hidden max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50 sticky top-0">
+                                                <tr id="preview-header"></tr>
+                                            </thead>
+                                            <tbody id="preview-body" class="bg-white divide-y divide-gray-200"></tbody>
+                                        </table>
+                                    </div>
+                                </section>
+                            </div>
 
-                                        <div id="tab-importer" class="space-y-8">
-                        
-                                                <div class="border-b border-gray-200">
-                            <nav class="-mb-px flex space-x-8" aria-label="Sub-Tabs">
-                                <button id="importer-subtab-btn-load" class="importer-subtab-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                                    Carregar Arquivos
-                                </button>
-                                <button id="importer-subtab-btn-history" class="importer-subtab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                                    Histórico
-                                </button>
-                            </nav>
-                        </div>
-                        
-                                                <div id="importer-subtabs-content" class="pt-0 space-y-8">                             
-          _ ... (O RESTO DO SEU HTML) ... _
+                            <section id="step-2-duplicates" class="bg-gray-50 p-6 rounded-lg shadow-inner hidden space-y-4">
+                                <h2 class="text-2xl font-semibold text-gray-800 mb-4">2. Verificação de Duplicatas</h2>
+                                <p class="text-gray-700">O sistema está verificando possíveis duplicatas no Pipedrive.</p>
+                                <div id="duplicate-loader" class="flex items-center space-x-2 mb-4">
+                                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                                    <span id="duplicate-status" class="text-gray-600 font-medium">Iniciando verificação...</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                    <div id="duplicate-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <p id="duplicate-progress-text" class="text-sm text-gray-600 text-center">0%</p>
+                                <div id="duplicate-log-container" class="bg-white p-4 rounded-md max-h-48 overflow-y-auto text-sm text-gray-700 border border-gray-200">
+                                    <p>Logs da verificação de duplicatas...</p>
+                                </div>
+                            </section>
 
-                </div>             </div>         </div>     </div>         <div id="admin-modal" class="hidden fixed z-50 inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <form id="admin-modal-form">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="admin-modal-title">Título do Modal</h3>
-                        <div class="mt-4 space-y-4" id="admin-modal-body"></div>
-                _ ... (O RESTO DO SEU HTML) ... _
-            </div>
-        </div>
-    </div>
+                            <section id="step-2-5-adjustment" class="bg-gray-50 p-6 rounded-lg shadow-inner hidden space-y-4">
+                                <h2 class="text-2xl font-semibold text-gray-800 mb-4">2.5. Ajustar Duplicatas Encontradas</h2>
+                                <p class="text-gray-700">Foram encontradas possíveis duplicatas. Por favor, revise e decida o que fazer.</p>
+                                <div id="duplicate-adjustment-container" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                                    </div>
+                                <div class="flex justify-end space-x-4 mt-6">
+                                    <button id="adjustment-skip-btn" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Pular (Manter Duplicatas)
+                                    </button>
+                                    <button id="adjustment-process-btn" class="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Aplicar Ajustes e Continuar
+                                    </button>
+                                </div>
+                            </section>
 
-        <div id="confirm-modal" class="hidden fixed z-50 inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-     _ ... (O RESTO DO SEU HTML) ... _
-        </div>
-    </div>
+                            <section id="step-3-mapping" class="bg-gray-50 p-6 rounded-lg shadow-inner hidden space-y-4">
+                                <h2 class="text-2xl font-semibold text-gray-800 mb-4">3. Mapear Campos</h2>
+                                <p class="text-gray-700">Associe as colunas da sua planilha aos campos do Pipedrive.</p>
+                                <div id="mapping-container" class="space-y-6">
+                                    </div>
+                                <div class="flex justify-end mt-6">
+                                    <button id="next-to-config-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Próximo: Configuração
+                                    </button>
+                                </div>
+                            </section>
 
-                <script src="script.js" defer></script>
-    
+                            <section id="step-4-config" class="bg-gray-50 p-6 rounded-lg shadow-inner hidden space-y-6">
+                                <h2 class="text-2xl font-semibold text-gray-800 mb-4">4. Configurações de Importação</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="pipeline-select" class="block text-sm font-medium text-gray-700 mb-1">Funil Padrão</label>
+                                        <select id="pipeline-select" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            </select>
+                                    </div>
+                                    <div>
+                                        <label for="stage-select" class="block text-sm font-medium text-gray-700 mb-1">Etapa Padrão</label>
+                                        <select id="stage-select" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            </select>
+                                    </div>
+                                    <div>
+                                        <label for="default-user-select" class="block text-sm font-medium text-gray-700 mb-1">Proprietário Padrão</label>
+                                        <select id="default-user-select" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            </select>
+                                    </div>
+                                    <div>
+                                        <label for="vertical-column-select" class="block text-sm font-medium text-gray-700 mb-1">Coluna para Regra de Vertical (Opcional)</label>
+                                        <select id="vertical-column-select" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">-- Não usar regra de vertical --</option>
+                                            </select>
+                                        <p class="text-sm text-gray-500 mt-1">Selecione uma coluna para usar as regras de distribuição de verticais.</p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <label class="block text-sm font-medium text-gray-700">Lógica de Negócio (Deal)</label>
+                                    <div class="flex items-center space-x-4">
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-logic" value="create-open" checked class="form-radio h-4 w-4 text-blue-600"/>
+                                            <span class="ml-2 text-gray-700">Criar Negócio Aberto</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-logic" value="create-if-not-won-or-lost" class="form-radio h-4 w-4 text-blue-600"/>
+                                            <span class="ml-2 text-gray-700">Criar Negócio SE não for 'Ganho' ou 'Perdido' (da planilha)</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-logic" value="create-if-status-is" class="form-radio h-4 w-4 text-blue-600"/>
+                                            <span class="ml-2 text-gray-700">Criar Negócio APENAS SE status for (da planilha):</span>
+                                        </label>
+                                    </div>
+                                    <div id="deal-logic-status-options" class="flex items-center space-x-4 pl-8 hidden">
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-status-choice" id="deal-status-won" value="won" class="form-radio h-4 w-4 text-green-600"/>
+                                            <span class="ml-2 text-gray-700">Ganho</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-status-choice" id="deal-status-lost" value="lost" class="form-radio h-4 w-4 text-red-600"/>
+                                            <span class="ml-2 text-gray-700">Perdido</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-status-choice" id="deal-status-open" value="open" checked class="form-radio h-4 w-4 text-blue-600"/>
+                                            <span class="ml-2 text-gray-700">Aberto</span>
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center space-x-4 mt-2">
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-logic" value="create-if-status-is-not" class="form-radio h-4 w-4 text-blue-600"/>
+                                            <span class="ml-2 text-gray-700">Criar Negócio APENAS SE status NÃO for (da planilha):</span>
+                                        </label>
+                                    </div>
+                                    <div id="deal-logic-not-status-options" class="flex items-center space-x-4 pl-8 hidden">
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-not-status-choice" id="deal-not-status-won" value="won" checked class="form-radio h-4 w-4 text-green-600"/>
+                                            <span class="ml-2 text-gray-700">Ganho</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-not-status-choice" id="deal-not-status-lost" value="lost" class="form-radio h-4 w-4 text-red-600"/>
+                                            <span class="ml-2 text-gray-700">Perdido</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="deal-not-status-choice" id="deal-not-status-open" value="open" class="form-radio h-4 w-4 text-blue-600"/>
+                                            <span class="ml-2 text-gray-700">Aberto</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end space-x-4 mt-6">
+                                    <button id="back-to-mapping-btn" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Anterior: Mapeamento
+                                    </button>
+                                    <button id="next-to-validation-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Próximo: Validar
+                                    </button>
+                                </div>
+                            </section>
+
+                            <section id="step-5-validation" class="bg-gray-50 p-6 rounded-lg shadow-inner hidden space-y-4">
+                                <h2 class="text-2xl font-semibold text-gray-800 mb-4">5. Validação Final</h2>
+                                <p class="text-gray-700">Revise as configurações antes de iniciar a importação.</p>
+
+                                <div class="bg-white p-4 rounded-md shadow-sm border border-gray-200 space-y-3">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-2">Resumo das Configurações</h3>
+                                    <div id="validation-settings-summary" class="text-sm text-gray-700 space-y-1">
+                                        </div>
+                                </div>
+
+                                <div class="bg-white p-4 rounded-md shadow-sm border border-gray-200 space-y-3">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-2">Amostra dos Dados Mapeados</h3>
+                                    <div id="validation-sample-container" class="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50 sticky top-0">
+                                                <tr id="validation-sample-header"></tr>
+                                            </thead>
+                                            <tbody id="validation-sample-body" class="bg-white divide-y divide-gray-200"></tbody>
+                                        </table>
+                                    </div>
+                                    <p class="text-sm text-gray-500 mt-2">Esta é uma amostra de como os dados serão formatados para importação.</p>
+                                </div>
+                                <div class="flex justify-end space-x-4 mt-6">
+                                    <button id="validation-back-btn" class="bg-gray-300 text-gray-800 py-2 px-6 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Anterior: Configuração
+                                    </button>
+                                    <button id="validation-start-btn" class="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Iniciar Importação
+                                    </button>
+                                </div>
+                            </section>
+
+                            <section id="step-6-log" class="bg-gray-50 p-6 rounded-lg shadow-inner hidden space-y-4">
+                                <h2 class="text-2xl font-semibold text-gray-800 mb-4">6. Progresso da Importação</h2>
+                                <p class="text-gray-700">A importação está em andamento. Não feche esta página.</p>
+                                <div id="import-loader" class="flex items-center space-x-2 mb-4">
+                                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                                    <span id="import-status" class="text-gray-600 font-medium">Iniciando importação...</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <p id="progress-text" class="text-sm text-gray-600 text-center">0%</p>
+                                <div id="log-container" class="bg-white p-4 rounded-md max-h-60 overflow-y-auto text-sm text-gray-700 border border-gray-200">
+                                    <p>Logs da importação aparecerão aqui...</p>
+                                </div>
+                                <div class="flex justify-end mt-6">
+                                    <button id="reset-importer-btn" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Reiniciar Importador
+                                    </button>
+                                </div>
+                            </section>
+                        </div>
+                        <div id="importer-subtab-history" class="hidden space-y-6">
+                            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Histórico de Importações</h2>
+                            <p class="text-gray-700">Recurso em desenvolvimento. Aqui você poderá ver o histórico das suas importações.</p>
+                        </div>
+
+                    </div>
+                    <div id="tab-verticals" class="hidden space-y-6">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Gestão de Verticais</h2>
+                        <div id="verticals-message" class="hidden p-4 rounded-lg mb-4"></div>
+                        <p class="text-gray-700 mb-4">Defina as regras de distribuição para cada vertical. Os leads com verticais correspondentes serão atribuídos aos usuários selecionados.</p>
+                        <div id="verticals-container" class="space-y-6 bg-gray-50 p-6 rounded-lg shadow-inner">
+                            </div>
+                        <div class="flex justify-end mt-6">
+                            <button id="save-verticals-btn" class="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                Salvar Configurações de Verticais
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="tab-admin" class="hidden space-y-6">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Administração Pipedrive</h2>
+                        <p id="admin-message" class="text-gray-700 mb-4"></p>
+                        <div class="border-b border-gray-200 pb-2 flex justify-between items-center">
+                            <nav class="-mb-px flex space-x-8" aria-label="Admin Tabs">
+                                <button id="admin-tab-btn-pipelines" class="admin-tab-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    Funis
+                                </button>
+                                <button id="admin-tab-btn-products" class="admin-tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    Produtos
+                                </button>
+                                <button id="admin-tab-btn-activity-types" class="admin-tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    Tipos de Atividade
+                                </button>
+                                <button id="admin-tab-btn-fields" class="admin-tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    Campos Personalizados
+                                </button>
+                                <button id="admin-tab-btn-users" class="admin-tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    Usuários
+                                </button>
+                            </nav>
+                            <select id="admin-tabs-select" class="block md:hidden py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                <option value="admin-pipelines-view">Funis</option>
+                                <option value="admin-products-view">Produtos</option>
+                                <option value="admin-activity-types-view">Tipos de Atividade</option>
+                                <option value="admin-fields-view">Campos Personalizados</option>
+                                <option value="admin-users-view">Usuários</option>
+                            </select>
+                        </div>
+
+                        <div id="admin-tabs-content" class="space-y-6 pt-4">
+
+                            <div id="admin-pipelines-view" class="space-y-4">
+                                <h3 class="text-xl font-semibold text-gray-800">Gerenciar Funis</h3>
+                                <div id="admin-pipelines-loader" class="flex items-center justify-center space-x-2 hidden">
+                                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                                    <span class="text-gray-600 font-medium">Carregando funis...</span>
+                                </div>
+                                <div id="admin-pipelines-table-container" class="bg-white p-4 rounded-md shadow-sm border border-gray-200 max-h-96 overflow-y-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ativo</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="admin-pipelines-table-body" class="bg-white divide-y divide-gray-200">
+                                            <tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">Nenhum funil encontrado.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex justify-end mt-4">
+                                    <button id="admin-add-pipeline-btn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Adicionar Funil
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="admin-stages-view" class="hidden space-y-4">
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <button id="admin-back-to-pipelines-btn" class="p-2 rounded-full hover:bg-gray-200 transition duration-150 ease-in-out">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <h3 class="text-xl font-semibold text-gray-800" id="admin-stages-title">Etapas do Funil: [Nome do Funil]</h3>
+                                </div>
+                                <div id="admin-stages-loader" class="flex items-center justify-center space-x-2 hidden">
+                                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                                    <span class="text-gray-600 font-medium">Carregando etapas...</span>
+                                </div>
+                                <div id="admin-stages-table-container" class="bg-white p-4 rounded-md shadow-sm border border-gray-200 max-h-96 overflow-y-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prob.</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd Neg.</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="admin-stages-table-body" class="bg-white divide-y divide-gray-200">
+                                            <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Nenhuma etapa encontrada.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex justify-end mt-4">
+                                    <button id="admin-add-stage-btn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Adicionar Etapa
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="admin-products-view" class="hidden space-y-4">
+                                <h3 class="text-xl font-semibold text-gray-800">Gerenciar Produtos</h3>
+                                <div id="admin-products-loader" class="flex items-center justify-center space-x-2 hidden">
+                                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                                    <span class="text-gray-600 font-medium">Carregando produtos...</span>
+                                </div>
+                                <div id="admin-products-table-container" class="bg-white p-4 rounded-md shadow-sm border border-gray-200 max-h-96 overflow-y-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ativo</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="admin-products-table-body" class="bg-white divide-y divide-gray-200">
+                                            <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Nenhum produto encontrado.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex justify-end mt-4">
+                                    <button id="admin-add-product-btn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Adicionar Produto
+                                    </button>
+                                </div>
+                            </section>
+
+                            <div id="admin-activity-types-view" class="hidden space-y-4">
+                                <h3 class="text-xl font-semibold text-gray-800">Gerenciar Tipos de Atividade</h3>
+                                <div id="admin-activityTypes-loader" class="flex items-center justify-center space-x-2 hidden">
+                                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                                    <span class="text-gray-600 font-medium">Carregando tipos de atividade...</span>
+                                </div>
+                                <div id="admin-activityTypes-table-container" class="bg-white p-4 rounded-md shadow-sm border border-gray-200 max-h-96 overflow-y-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ícone</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cor</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="admin-activityTypes-table-body" class="bg-white divide-y divide-gray-200">
+                                            <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Nenhum tipo de atividade encontrado.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex justify-end mt-4">
+                                    <button id="admin-add-activityType-btn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Adicionar Tipo de Atividade
+                                    </button>
+                                </div>
+                            </section>
+
+                            <div id="admin-fields-view" class="hidden space-y-4">
+                                <h3 class="text-xl font-semibold text-gray-800">Gerenciar Campos Personalizados</h3>
+                                <div class="flex items-center space-x-4 mb-4">
+                                    <label for="admin-field-entity-select" class="text-sm font-medium text-gray-700">Entidade:</label>
+                                    <select id="admin-field-entity-select" class="block w-48 px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="person">Pessoa</option>
+                                        <option value="organization">Organização</option>
+                                        <option value="deal">Negócio</option>
+                                        <option value="product">Produto</option>
+                                    </select>
+                                </div>
+                                <div id="admin-fields-loader" class="flex items-center justify-center space-x-2 hidden">
+                                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                                    <span class="text-gray-600 font-medium">Carregando campos...</span>
+                                </div>
+                                <div id="admin-fields-table-container" class="bg-white p-4 rounded-md shadow-sm border border-gray-200 max-h-96 overflow-y-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chave (Key)</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ativo</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="admin-fields-table-body" class="bg-white divide-y divide-gray-200">
+                                            <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Nenhum campo encontrado.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex justify-end mt-4">
+                                    <button id="admin-add-field-btn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Adicionar Campo
+                                    </button>
+                                </div>
+                            </section>
+
+                            <div id="admin-users-view" class="hidden space-y-4">
+                                <h3 class="text-xl font-semibold text-gray-800">Gerenciar Usuários</h3>
+                                <div id="admin-users-loader" class="flex items-center justify-center space-x-2 hidden">
+                                    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div>
+                                    <span class="text-gray-600 font-medium">Carregando usuários...</span>
+                                </div>
+                                <div id="admin-users-table-container" class="bg-white p-4 rounded-md shadow-sm border border-gray-200 max-h-96 overflow-y-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ativo</th>
+                                                <th class="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="admin-users-table-body" class="bg-white divide-y divide-gray-200">
+                                            <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Nenhum usuário encontrado.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex justify-end mt-4">
+                                    <button id="admin-add-user-btn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                                        Adicionar Usuário
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div> </div> </div> </div> </div> <div id="admin-modal" class="hidden fixed z-50 inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <form id="admin-modal-form">
+                        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="admin-modal-title">Título do Modal</h3>
+                            <div class="mt-4 space-y-4" id="admin-modal-body"></div>
+                        </div>
+                        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                            <button type="submit" id="admin-modal-submit-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                                Salvar
+                            </button>
+                            <button type="button" id="admin-modal-cancel-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="confirm-modal" class="hidden fixed z-50 inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="confirm-modal-title">Confirmação</h3>
+                        <div class="mt-2" id="confirm-modal-body">
+                            <p class="text-sm text-gray-500">Você tem certeza que deseja realizar esta ação?</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="button" id="confirm-modal-confirm-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Confirmar
+                        </button>
+                        <button type="button" id="confirm-modal-cancel-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js" defer></script>
+   
 </body>
 </html>
