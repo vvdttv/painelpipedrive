@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+        <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Importador de leads para o pipedrive via API</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    
+        <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        
+                <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Importador de leads para o pipedrive via API</h1>
+            <p class="text-lg text-gray-600">Importe, mapeie e distribua seus leads para o Pipedrive, usando planilhas nutridas e enriquecidas, tanto em csv quanto em xlsx.</p>
+        </header>
+
+                <div id="global-message" class="hidden p-4 rounded-lg mb-6"></div>
+
+                <div class="bg-white rounded-lg shadow-2xl p-6 md:p-8 space-y-8">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="api-token" class="block text-sm font-medium text-gray-700">API Token Pipedrive</label>
+                    <input type="password" id="api-token" class="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" value="a93117dbad6f841d401a6af210a70ad090548d6b">
+                </div>
+                <div>
+                    <label for="company-domain" class="block text-sm font-medium text-gray-700">Domínio da Empresa (Pipedrive URL)</label>
+                    <input type="text" id="company-domain" class="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="ex: suaempresa (de suaempresa.pipedrive.com)" value="https://iev.pipedrive.com/">
+                </div>
+            </div>
+
+                        
+                        <div id="global-loader" class="hidden items-center justify-center space-x-2">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
+                <span class="text-gray-600 font-medium">Carregando dados da sua conta Pipedrive...</span>
+            </div>
+            
+                        <div id="main-content" class="hidden space-y-8">
+                                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                        <button id="tab-btn-importer" class="tab-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Importador de Leads
+                        </button>
+                        <button id="tab-btn-verticals" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Gestão de Verticais
+                        </button>
+                        <button id="tab-btn-admin" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Admin Pipedrive
+                        </button>
+                    </nav>
+                </div>
+                
+                                <div id="tabs-content">
+
+                                        <div id="tab-importer" class="space-y-8">
+                        
+                                                <div class="border-b border-gray-200">
+                            <nav class="-mb-px flex space-x-8" aria-label="Sub-Tabs">
+                                <button id="importer-subtab-btn-load" class="importer-subtab-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    Carregar Arquivos
+                                </button>
+                                <button id="importer-subtab-btn-history" class="importer-subtab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    Histórico
+                                </button>
+                            </nav>
+                        </div>
+                        
+                                                <div id="importer-subtabs-content" class="pt-0 space-y-8">                             
+          _ ... (O RESTO DO SEU HTML) ... _
+
+                </div>             </div>         </div>     </div>         <div id="admin-modal" class="hidden fixed z-50 inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="admin-modal-form">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="admin-modal-title">Título do Modal</h3>
+                        <div class="mt-4 space-y-4" id="admin-modal-body"></div>
+                _ ... (O RESTO DO SEU HTML) ... _
+            </div>
+        </div>
+    </div>
+
+        <div id="confirm-modal" class="hidden fixed z-50 inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+     _ ... (O RESTO DO SEU HTML) ... _
+        </div>
+    </div>
+
+                <script src="script.js" defer></script>
+    
+</body>
+</html>
