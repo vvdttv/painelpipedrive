@@ -1222,6 +1222,7 @@ async function processRow(row, mapping, settings) {
             
             // Se a chave for uma chave hardcoded antiga, substitui pela chave dinâmica
             let finalKey = key;
+            // Valida se a chave antiga está sendo usada no mapeamento E se a chave dinâmica foi encontrada
             if (key === '8e10080613149524022cf363b811867c2d142d76' && CPF_KEY) finalKey = CPF_KEY;
             if (key === '96ff76d1e4c3b5b15b216963f413c6f240c5f513' && CNPJ_KEY) finalKey = CNPJ_KEY;
 
@@ -1890,6 +1891,7 @@ window.addEventListener('DOMContentLoaded', () => {
     dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
     dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
+
 
 
 
