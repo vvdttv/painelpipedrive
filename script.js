@@ -934,21 +934,29 @@ function populateMappingSection(headers) {
 function guessMapping(header) {
     const h = header.toLowerCase().replace(/[^a-z0-9]/gi, '');
 
-    // Organização
-    if (h.includes('razaosocial') || h.includes('nomefantasia') || h.includes('organizacao')) return 'name:organization';
+    // --- ORDEM DE PRECEDÊNCIA ---
+
+    // 1. Campos únicos (CPF/CNPJ) - Mais específicos primeiro
+    // Procura por 'cnpj' primeiro, pois colunas 'cpf/cnpj' devem mapear para cnpj
     if (h.includes('cnpj')) return '96ff76d1e4c3b5b15b216963f413c6f240c5f513:organization'; // Chave ANTIGA (para referência)
-    if (h.includes('telefone') && (h.includes('org') || h.includes('empresa'))) return 'phone:organization';
+    // Procura por 'cpf' ou 'documento' (e que não seja 'cnpj')
+    if ((h.includes('cpf') || h.includes('documento')) && !h.includes('cnpj')) return '8e10080613149524022cf363b811867c2d142d76:person'; // Chave ANTIGA (para referência)
+
+    // 2. Nomes de Entidade
+    if (h.includes('razaosocial') || h.includes('nomefantasia') || h.includes('organizacao')) return 'name:organization';
+    if (h.includes('pessoa') || h.includes('contato') || h.includes('nomesocio') || h.includes('nomecontato')) return 'name:person';
+
+    // 3. Contatos
+    if (h.includes('email')) return 'email:person'; // Pega todos os emails
+    if ((h.includes('telefone') || h.includes('fone') || h.includes('celular')) && (h.includes('org') || h.includes('empresa'))) return 'phone:organization';
+    if (h.includes('fone') || h.includes('celular') || (h.includes('telefone') && !h.includes('org'))) return 'phone:person';
+
+    // 4. Endereço
     if (h.includes('endereco') || h.includes('cep') || h.includes('cidade') || h.includes('estado')) return 'address:organization';
 
-    // Pessoa
-    if (h.includes('pessoa') || h.includes('contato') || h.includes('nomesocio') || h.includes('nomecontato')) return 'name:person';
-    if (h.includes('email')) return 'email:person'; // Pega todos os emails
-    if (h.includes('fone') || h.includes('celular') || (h.includes('telefone') && !h.includes('org'))) return 'phone:person';
-    if (h.includes('cpf') && !h.includes('cnpj')) return '8e10080613149524022cf363b811867c2d142d76:person'; // Chave ANTIGA (para referência)
-
-    // Negócio
+    // 5. Negócio
     if (h.includes('valor')) return 'value:deal';
-    if (h.includes('negocio') || h.includes('oportunidade')) return 'title:deal';
+    if ((h.includes('negocio') || h.includes('oportunidade')) && h.includes('titulo')) return 'title:deal';
 
     // CNAE (Exemplos)
     if (h.includes('cnaeprincipal') && !h.includes('descricao')) return '34f0c609a3c10b2460b5f8e5f78c106d87e07e0c:organization';
@@ -1194,14 +1202,31 @@ async function processRow(row, mapping, settings) {
     
     const payloads = { organization: {}, person: {}, deal: {}, notes: { organization: null, person: null, deal: null } };
     
+    // --- INÍCIO DA CORREÇÃO: Encontra chaves dinâmicas ---
+    const findPdFieldKey = (entity, ...names) => {
+        const field = pdFields[entity].find(f => 
+            names.some(n => f.name.toLowerCase().includes(n.toLowerCase()))
+        );
+        return field ? field.key : null;
+    };
+    const CPF_KEY = findPdFieldKey('person', 'cpf');
+    const CNPJ_KEY = findPdFieldKey('organization', 'cnpj');
+    // --- FIM DA CORREÇÃO ---
+
     // Preenche os payloads
     for (const csvHeader in mapping) {
         const pdKey = mapping[csvHeader];
         const value = row[csvHeader];
         if (value !== undefined && value !== null && value !== '') {
             const [key, entity] = pdKey.split(':');
-            if (key === 'note') payloads.notes[entity] = String(value);
-            else if (entity) payloads[entity][key] = String(value);
+            
+            // Se a chave for uma chave hardcoded antiga, substitui pela chave dinâmica
+            let finalKey = key;
+            if (key === '8e10080613149524022cf363b811867c2d142d76' && CPF_KEY) finalKey = CPF_KEY;
+            if (key === '96ff76d1e4c3b5b15b216963f413c6f240c5f513' && CNPJ_KEY) finalKey = CNPJ_KEY;
+
+            if (finalKey === 'note') payloads.notes[entity] = String(value);
+            else if (entity) payloads[entity][finalKey] = String(value);
         }
     }
 
@@ -1210,13 +1235,16 @@ async function processRow(row, mapping, settings) {
     
     let orgId = null;
     if (payloads.organization['name']) {
-        const cnpjKey = Object.keys(payloads.organization).find(k => k.startsWith('96ff76d1e4c3b5b15b216963f413c6f240c5f513')); // CNPJ Key
-        if(cnpjKey && payloads.organization[cnpjKey]) {
-            orgId = await findEntity('/organizations/search', payloads.organization[cnpjKey], 'custom_fields.' + cnpjKey);
+        // --- INÍCIO DA CORREÇÃO: Busca final de duplicata de ORG ---
+        if(CNPJ_KEY && payloads.organization[CNPJ_KEY]) {
+            // Busca pelo campo dinâmico CNPJ (exact_match)
+            orgId = await findEntity('/organizations/search', payloads.organization[CNPJ_KEY], CNPJ_KEY, true);
         }
         if (!orgId) {
-            orgId = await findEntity('/organizations/search', payloads.organization['name'], 'name');
+            // Busca por nome (NÃO exact_match)
+            orgId = await findEntity('/organizations/search', payloads.organization['name'], 'name', false);
         }
+        // --- FIM DA CORREÇÃO ---
         
         if (orgId) {
             logToScreen(dom.logContainer, `Org encontrada: ${payloads.organization['name']} (${orgId})`);
@@ -1234,15 +1262,26 @@ async function processRow(row, mapping, settings) {
     
     if (orgId) payloads.person.org_id = orgId;
     
-    const cpfKey = Object.keys(payloads.person).find(k => k.startsWith('8e10080613149524022cf363b811867c2d142d76')); // CPF Key
     let personId = null;
     
-    if(cpfKey && payloads.person[cpfKey]) {
-        personId = await findEntity('/persons/search', payloads.person[cpfKey], 'custom_fields.' + cpfKey);
+    // --- INÍCIO DA CORREÇÃO: Busca final de duplicata de PESSOA ---
+    if(CPF_KEY && payloads.person[CPF_KEY]) {
+        // Busca pelo campo dinâmico CPF (exact_match)
+        personId = await findEntity('/persons/search', payloads.person[CPF_KEY], CPF_KEY, true);
+    }
+    if (!personId && payloads.person['email']) {
+         // Busca por email (exact_match)
+         personId = await findEntity('/persons/search', payloads.person['email'], 'email', true);
+    }
+     if (!personId && payloads.person['phone']) {
+         // Busca por phone (exact_match)
+         personId = await findEntity('/persons/search', payloads.person['phone'], 'phone', true);
     }
     if (!personId) {
-         personId = await findEntity('/persons/search', payloads.person['name'], 'name'); // Busca por nome
+        // Busca por nome (NÃO exact_match)
+         personId = await findEntity('/persons/search', payloads.person['name'], 'name', false);
     }
+    // --- FIM DA CORREÇÃO ---
     
     if (personId) {
         logToScreen(dom.logContainer, `Pessoa encontrada: ${payloads.person['name']} (${personId})`);
@@ -1307,14 +1346,37 @@ async function processRow(row, mapping, settings) {
         payloads.deal.status = 'open'; // Padrão
     }
 
+    // --- INÍCIO DA CORREÇÃO: Busca final de duplicata de NEGÓCIO ---
+    // Verifica se já existe um negócio com o mesmo título para esta pessoa/org
+    let dealId = await findEntity('/deals/search', payloads.deal.title, 'title', false, { person_id: personId, org_id: orgId });
+    if (dealId) {
+         throw new Error(`Ignorado: Negócio com título similar já existe para este contato/org (ID: ${dealId}).`);
+    }
+    // --- FIM DA CORREÇÃO ---
+
     const r = await pipedriveApiCall('/deals', 'POST', payloads.deal);
     logToScreen(dom.logContainer, `Negócio criado: ${r.data.title} (${r.data.id})`);
     if (payloads.notes.deal) await createNote(payloads.notes.deal, { deal_id: r.data.id });
 }
 
-async function findEntity(endpoint, term, field = 'name') {
+async function findEntity(endpoint, term, field = 'name', exactMatch = false, extraParams = null) {
     if (!term) return null;
-    const r = await pipedriveApiCall(`${endpoint}?term=${encodeURIComponent(term)}&fields=${field}&exact_match=true&limit=1`);
+    
+    // Limpa a sintaxe 'custom_fields.' que estava errada
+    const cleanField = field.replace('custom_fields.', '');
+    
+    let url = `${endpoint}?term=${encodeURIComponent(term)}&fields=${cleanField}&limit=1`;
+    
+    if (exactMatch) {
+        url += '&exact_match=true';
+    }
+
+    if (extraParams) {
+        if (extraParams.person_id) url += `&person_id=${extraParams.person_id}`;
+        if (extraParams.org_id) url += `&org_id=${extraParams.org_id}`;
+    }
+    
+    const r = await pipedriveApiCall(url);
     return r.data?.items?.[0]?.item?.id || null;
 }
 
@@ -1828,6 +1890,7 @@ window.addEventListener('DOMContentLoaded', () => {
     dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
     dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
+
 
 
 
