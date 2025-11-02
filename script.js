@@ -729,9 +729,6 @@ async function runDuplicateCheck() {
     log(`Busca por CNPJ (Organização) na coluna: ${cnpjCol} (Chave API: ${CNPJ_KEY || 'N/A'})`);
     log('----------------------------------------------------', 'info');
     
-    let duplicatesFound = [];
-    let nonDuplicates = [];
-
     // 2. Loop de Verificação
     log('Iniciando busca na API...', 'info');
     dom.duplicateStatus.textContent = 'Verificando...';
@@ -744,30 +741,39 @@ async function runDuplicateCheck() {
         
         try {
             // Passa as chaves dinâmicas para a função de busca
-            const duplicateResult = await searchDuplicate(row, searchKeys, CPF_KEY, CNPJ_KEY);
+            // Salva a info de duplicata (ou null) diretamente na linha
+            row.duplicateInfo = await searchDuplicate(row, searchKeys, CPF_KEY, CNPJ_KEY); 
             
-            if (duplicateResult) {
-                duplicatesFound.push(duplicateResult);
-                const matchTypes = duplicateResult.matches.map(m => (m.type || m.entity_type || 'item')).join(', ');
+            if (row.duplicateInfo && row.duplicateInfo.matches.length > 0) {
+                const matchTypes = row.duplicateInfo.matches.map(m => (m.type || m.entity_type || 'item')).join(', ');
                 log(`Linha ${i + 1}: Correspondência encontrada (${matchTypes})`, 'warn');
             } else {
-                nonDuplicates.push(row);
+                // Não é uma duplicata, mas a mantemos na lista
+                row.duplicateInfo = null;
             }
         } catch (error) {
             log(`Linha ${i + 1}: Erro na verificação - ${error.message}`, 'error');
-            nonDuplicates.push(row); // Trata como não-duplicata se a busca falhar
+            row.duplicateInfo = null; // Trata como não-duplicata se a busca falhar
         }
         
         await sleep(50); // Delay
     }
 
     // 3. Conclusão
-    log(`Verificação concluída. ${duplicatesFound.length} linhas com duplicatas. ${nonDuplicates.length} novos leads.`, 'success');
+    // Filtra as duplicatas da lista principal para a próxima etapa
+    const duplicatesFound = parsedData
+        .filter(row => row.duplicateInfo)
+        .map(row => row.duplicateInfo); // Agora 'duplicatesFound' contém { rowData, matches }
+        
+    const nonDuplicatesCount = parsedData.length - duplicatesFound.length;
+
+    log(`Verificação concluída. ${duplicatesFound.length} linhas com duplicatas. ${nonDuplicatesCount} novos leads.`, 'success');
+    log('Todas as linhas (novas e duplicadas) seguirão para as próximas etapas.', 'info');
     dom.duplicateLoader.classList.add('hidden');
     dom.duplicateStatus.textContent = 'Verificação Concluída!';
 
-    // Atualiza a lista principal de dados. Apenas não-duplicatas seguirão para importação.
-    parsedData = nonDuplicates; 
+    // NÃO removemos mais as duplicatas:
+    // parsedData = nonDuplicates; // <-- ESTA LINHA FOI REMOVIDA
 
     // Mostra o botão de avançar
     dom.duplicateNextStepContainer.classList.remove('hidden');
@@ -830,6 +836,33 @@ async function searchDuplicate(row, keys, cpfKey, cnpjKey) { // Recebe as chaves
     if (matches.length > 0) {
         // Remove duplicatas internas (ex: achou a mesma pessoa por email e CPF)
         const uniqueMatches = Array.from(new Map(matches.map(item => [item.id, item])).values());
+
+        // --- NOVA LÓGICA: Buscar deals para os matches ---
+        for (const match of uniqueMatches) {
+            let dealsRes = null;
+            // Garante que 'type' esteja definido corretamente
+            const entityType = match.type || (match.entity_type === 'organization' ? 'organization' : 'person');
+            match.type = entityType; 
+
+            try {
+                if (entityType === 'person') {
+                    dealsRes = await pipedriveApiCall(`/persons/${match.id}/deals`);
+                } else if (entityType === 'organization') {
+                    dealsRes = await pipedriveApiCall(`/organizations/${match.id}/deals`);
+                }
+                
+                if (dealsRes && dealsRes.data) {
+                    // Armazena apenas os status (open, won, lost)
+                    match.existingDealStatuses = [...new Set(dealsRes.data.map(d => d.status))];
+                } else {
+                    match.existingDealStatuses = [];
+                }
+            } catch (e) {
+                logToScreen(dom.duplicateLogContainer, `Erro ao buscar deals para ${entityType} ID ${match.id}: ${e.message}`, 'error');
+                match.existingDealStatuses = [];
+            }
+        }
+        
         return { rowData: row, matches: uniqueMatches };
     }
     return null;
@@ -855,7 +888,7 @@ function showDuplicateAdjustmentScreen(duplicates) {
         return Object.keys(mappingGuess).find(k => mappingGuess[k] === key);
     };
 
-    duplicates.forEach((dup, index) => {
+    duplicates.forEach((dup, index) => { // 'dup' aqui é o objeto { rowData, matches }
         html += `<div class="p-4 border border-yellow-300 bg-yellow-50 rounded-lg space-y-3">`;
         html += `<h3 class="font-bold text-gray-900">Linha ${index + 1} (da sua planilha)</h3>`;
         
@@ -871,16 +904,23 @@ function showDuplicateAdjustmentScreen(duplicates) {
         
         dup.matches.forEach(match => {
             const entityType = match.type || (match.entity_type === 'organization' ? 'ORG' : 'PESSOA');
+            // --- LÓGICA ATUALIZADA ---
+            const dealStatuses = (match.existingDealStatuses && match.existingDealStatuses.length > 0)
+                ? match.existingDealStatuses.join(', ')
+                : 'Nenhum';
+                
             html += `<div class="p-2 border border-gray-200 rounded bg-white">`;
             html += `<p class="text-sm"><strong class="text-blue-600">${entityType}:</strong> ${match.name} (ID: ${match.id})</p>`;
             html += `<p class="text-xs text-gray-500">Encontrado por: ${match.foundBy}</p>`;
+            // --- LINHA ADICIONADA ---
+            html += `<p class="text-xs text-gray-600 font-medium">Status de Negócios Existentes: <span class="text-red-700">${dealStatuses}</span></p>`;
             html += `</div>`;
         });
         
         html += `</div>`;
     });
     
-    html += `<p class="mt-4 text-red-600 font-medium">A interface de ajuste (Mesclar / Atualizar) ainda não foi implementada. Por enquanto, você pode pular estas duplicatas.</p>`;
+    html += `<p class="mt-4 text-gray-700 font-medium">A interface de ajuste (Mesclar / Atualizar) ainda não foi implementada. Por enquanto, você pode revisar os dados e pular. A Lógica de Negócio (Etapa 4) será aplicada a esses status da API.</p>`;
     dom.duplicateAdjustmentContainer.innerHTML = html;
 }
 
@@ -1231,11 +1271,38 @@ async function processRow(row, mapping, settings) {
         }
     }
 
+    // --- LÓGICA DE DUPLICATAS ---
+    let orgId = null;
+    let personId = null;
+    let existingDealStatuses = [];
+    const isDuplicate = row.duplicateInfo && row.duplicateInfo.matches.length > 0;
+    
+    if (isDuplicate) {
+        const matches = row.duplicateInfo.matches;
+        const personMatch = matches.find(m => m.type === 'person');
+        const orgMatch = matches.find(m => m.type === 'organization');
+        
+        if (personMatch) {
+            personId = personMatch.id;
+            logToScreen(dom.logContainer, `Pessoa (duplicada) encontrada: ${personMatch.name} (${personId})`);
+        }
+        if (orgMatch) {
+            orgId = orgMatch.id;
+            logToScreen(dom.logContainer, `Org (duplicada) encontrada: ${orgMatch.name} (${orgId})`);
+        }
+        
+        // Coleta status de todos os matches (pessoa e org)
+        const allStatuses = matches.flatMap(m => m.existingDealStatuses || []);
+        existingDealStatuses = [...new Set(allStatuses)];
+    }
+    // --- FIM LÓGICA DE DUPLICATAS ---
+
+
     // 1. Achar/Criar Organização
     if (!payloads.organization['name'] && !payloads.person['name']) throw new Error('Nome da Organização ou Pessoa é obrigatório.');
     
-    let orgId = null;
-    if (payloads.organization['name']) {
+    // Se não for duplicata E tiver nome, procura ou cria
+    if (!orgId && payloads.organization['name']) {
         // --- INÍCIO DA CORREÇÃO: Busca final de duplicata de ORG ---
         if(CNPJ_KEY && payloads.organization[CNPJ_KEY]) {
             // Busca pelo campo dinâmico CNPJ (exact_match)
@@ -1255,57 +1322,70 @@ async function processRow(row, mapping, settings) {
             orgId = r.data.id;
             logToScreen(dom.logContainer, `Org criada: ${payloads.organization['name']} (${orgId})`);
         }
-        if (payloads.notes.organization) await createNote(payloads.notes.organization, { org_id: orgId });
     }
+    if (orgId && payloads.notes.organization) await createNote(payloads.notes.organization, { org_id: orgId });
+
 
     // 2. Achar/Criar Pessoa
     if (!payloads.person['name']) throw new Error('Pessoa: name vazio.');
     
     if (orgId) payloads.person.org_id = orgId;
     
-    let personId = null;
-    
-    // --- INÍCIO DA CORREÇÃO: Busca final de duplicata de PESSOA ---
-    if(CPF_KEY && payloads.person[CPF_KEY]) {
-        // Busca pelo campo dinâmico CPF (exact_match)
-        personId = await findEntity('/persons/search', payloads.person[CPF_KEY], CPF_KEY, true);
+    // Se não for duplicata E tiver nome, procura ou cria
+    if (!personId && payloads.person['name']) {
+        // --- INÍCIO DA CORREÇÃO: Busca final de duplicata de PESSOA ---
+        if(CPF_KEY && payloads.person[CPF_KEY]) {
+            // Busca pelo campo dinâmico CPF (exact_match)
+            personId = await findEntity('/persons/search', payloads.person[CPF_KEY], CPF_KEY, true);
+        }
+        if (!personId && payloads.person['email']) {
+             // Busca por email (exact_match)
+             personId = await findEntity('/persons/search', payloads.person['email'], 'email', true);
+        }
+         if (!personId && payloads.person['phone']) {
+             // Busca por phone (exact_match)
+             personId = await findEntity('/persons/search', payloads.person['phone'], 'phone', true);
+        }
+        if (!personId) {
+            // Busca por nome (NÃO exact_match)
+             personId = await findEntity('/persons/search', payloads.person['name'], 'name', false);
+        }
+        // --- FIM DA CORREÇÃO ---
+        
+        if (personId) {
+            logToScreen(dom.logContainer, `Pessoa encontrada: ${payloads.person['name']} (${personId})`);
+            // TODO: Atualizar Pessoa?
+        } else {
+            const r = await pipedriveApiCall('/persons', 'POST', payloads.person);
+            personId = r.data.id;
+            logToScreen(dom.logContainer, `Pessoa criada: ${payloads.person['name']} (${personId})`);
+        }
     }
-    if (!personId && payloads.person['email']) {
-         // Busca por email (exact_match)
-         personId = await findEntity('/persons/search', payloads.person['email'], 'email', true);
-    }
-     if (!personId && payloads.person['phone']) {
-         // Busca por phone (exact_match)
-         personId = await findEntity('/persons/search', payloads.person['phone'], 'phone', true);
-    }
-    if (!personId) {
-        // Busca por nome (NÃO exact_match)
-         personId = await findEntity('/persons/search', payloads.person['name'], 'name', false);
-    }
-    // --- FIM DA CORREÇÃO ---
-    
-    if (personId) {
-        logToScreen(dom.logContainer, `Pessoa encontrada: ${payloads.person['name']} (${personId})`);
-        // TODO: Atualizar Pessoa?
-    } else {
-        const r = await pipedriveApiCall('/persons', 'POST', payloads.person);
-        personId = r.data.id;
-        logToScreen(dom.logContainer, `Pessoa criada: ${payloads.person['name']} (${personId})`);
-    }
-    if (payloads.notes.person) await createNote(payloads.notes.person, { person_id: personId });
+    if (personId && payloads.notes.person) await createNote(payloads.notes.person, { person_id: personId });
 
-    // 3. Lógica de Criação de Negócio
-    const rowStatus = payloads.deal.status ? payloads.deal.status.toLowerCase() : 'open';
 
-    if (dealLogic === 'create-if-not-won-or-lost' && (rowStatus === 'won' || rowStatus === 'lost')) {
-        throw new Error(`Ignorado: Lógica "não criar se Ganho ou Perdido" e status da linha é ${rowStatus}.`);
+    // 3. Lógica de Criação de Negócio (Baseada na API)
+    // Esta lógica SÓ se aplica se for uma duplicata
+    // const rowStatus = ... // REMOVIDO
+    
+    if (isDuplicate) {
+        logToScreen(dom.logContainer, `Aplicando lógica de negócio. Status (API): ${existingDealStatuses.join(', ') || 'Nenhum'}`);
+        
+        if (dealLogic === 'create-if-not-won-or-lost' && (existingDealStatuses.includes('won') || existingDealStatuses.includes('lost'))) {
+            throw new Error(`Ignorado: Lógica "não criar se Ganho ou Perdido" e contato já possui negócios com status: ${existingDealStatuses.join(', ')}.`);
+        }
+        if (dealLogic === 'create-if-status-is' && !existingDealStatuses.includes(dealStatus)) {
+            // Ex: Lógica é "só se for 'won'", e ele não tem 'won'
+            throw new Error(`Ignorado: Lógica "criar APENAS SE status for ${dealStatus}" e status (API) são: ${existingDealStatuses.join(', ')}.`);
+        }
+        if (dealLogic === 'create-if-status-is-not' && existingDealStatuses.includes(dealStatus)) {
+            // Ex: Lógica é "só se NÃO for 'won'", e ele TEM 'won'
+            throw new Error(`Ignorado: Lógica "NÃO criar se status for ${dealStatus}" e esse status foi encontrado na API.`);
+        }
+        logToScreen(dom.logContainer, 'Lógica de negócio aprovada. Criando novo negócio.', 'info');
     }
-    if (dealLogic === 'create-if-status-is' && rowStatus !== dealStatus) {
-        throw new Error(`Ignorado: Lógica "criar APENAS SE status for ${dealStatus}" e status da linha é ${rowStatus}.`);
-    }
-    if (dealLogic === 'create-if-status-is-not' && rowStatus === dealStatus) {
-        throw new Error(`Ignorado: Lógica "NÃO criar se status for ${dealStatus}" e status da linha é ${rowStatus}.`);
-    }
+    // Se a lógica passou (ou se for linha nova), o script continua...
+
 
     // 4. Atribuir Usuário (Distribuição Vertical)
     let userId = null;
@@ -1333,6 +1413,7 @@ async function processRow(row, mapping, settings) {
     } 
     logToScreen(dom.logContainer, `Atribuindo (Motivo: ${reason})`, 'info');
     
+    
     // 5. Criar Negócio
     payloads.deal.title = payloads.deal.title || `Negócio ${payloads.person['name'] || payloads.organization['name']}`;
     payloads.deal.org_id = orgId; 
@@ -1341,11 +1422,8 @@ async function processRow(row, mapping, settings) {
     payloads.deal.stage_id = stageId;
     
     // Define o status do negócio (won, lost, open)
-    if (rowStatus === 'won' || rowStatus === 'lost') {
-        payloads.deal.status = rowStatus;
-    } else {
-        payloads.deal.status = 'open'; // Padrão
-    }
+    // Como o status não vem da planilha, SEMPRE será 'open'.
+    payloads.deal.status = 'open';
 
     // --- INÍCIO DA CORREÇÃO: Busca final de duplicata de NEGÓCIO ---
     // Verifica se já existe um negócio com o mesmo título para esta pessoa/org
@@ -1358,6 +1436,7 @@ async function processRow(row, mapping, settings) {
     const r = await pipedriveApiCall('/deals', 'POST', payloads.deal);
     logToScreen(dom.logContainer, `Negócio criado: ${r.data.title} (${r.data.id})`);
     if (payloads.notes.deal) await createNote(payloads.notes.deal, { deal_id: r.data.id });
+}
 }
 
 async function findEntity(endpoint, term, field = 'name', exactMatch = false, extraParams = null) {
@@ -1891,6 +1970,7 @@ window.addEventListener('DOMContentLoaded', () => {
     dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
     dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
+
 
 
 
