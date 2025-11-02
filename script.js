@@ -1977,11 +1977,6 @@ window.addEventListener('DOMContentLoaded', () => {
     dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
     dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
-    
-    // Listeners Modais
-    dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
-    dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
-});
 
 
 
