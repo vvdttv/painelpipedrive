@@ -1437,7 +1437,6 @@ async function processRow(row, mapping, settings) {
     logToScreen(dom.logContainer, `Negócio criado: ${r.data.title} (${r.data.id})`);
     if (payloads.notes.deal) await createNote(payloads.notes.deal, { deal_id: r.data.id });
 }
-}
 
 async function findEntity(endpoint, term, field = 'name', exactMatch = false, extraParams = null) {
     if (!term) return null;
@@ -1970,6 +1969,7 @@ window.addEventListener('DOMContentLoaded', () => {
     dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
     dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
+
 
 
 
