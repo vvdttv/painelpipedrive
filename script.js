@@ -40,163 +40,8 @@ const ACTIVITY_ICONS = [
 let distributionRules = {}; // { userId: [vertical1, vertical2], ... } -> Verticais selecionadas
 
 // --- ELEMENTOS DO DOM ---
-// Objeto DOM baseado no SEU HTML (o que você subiu)
-const dom = {
-    apiTokenInput: document.getElementById('api-token'),
-    companyDomainInput: document.getElementById('company-domain'), 
-    connectApiBtn: document.getElementById('connect-api-btn'),
-    apiLoader: document.getElementById('api-loader'),
-    apiMessage: document.getElementById('api-message'),
-    apiConnectSection: document.getElementById('api-connect-section'),
-    globalMessage: document.getElementById('global-message'),
-    mainContent: document.getElementById('main-content'), 
-    
-    // Abas Principais
-    tabs: document.querySelectorAll('.tab-btn'),
-    tabsContent: document.querySelectorAll('#tabs-content > div'),
-    tabImporter: document.getElementById('tab-importer'),
-    tabVerticals: document.getElementById('tab-verticals'),
-    tabAdmin: document.getElementById('tab-admin'),
-
-    // Sub-abas do Importador
-    importerSubTabs: document.querySelectorAll('.importer-subtab-btn'),
-    importerSubTabsContent: document.querySelectorAll('#importer-subtabs-content > div'),
-
-    // Aba Importador - Etapa 1
-    step1: document.getElementById('step-1-upload'),
-    csvFileInput: document.getElementById('csv-file'),
-    loadCsvBtn: document.getElementById('load-csv-btn'),
-    fileStatus: document.getElementById('file-status'),
-    filePreview: document.getElementById('file-preview'),
-    previewHeader: document.getElementById('preview-header'),
-    previewBody: document.getElementById('preview-body'),
-    
-    // Etapa 2 (Duplicatas)
-    step2Duplicates: document.getElementById('step-2-duplicates'),
-    duplicateLoader: document.getElementById('duplicate-loader'),
-    duplicateStatus: document.getElementById('duplicate-status'),
-    duplicateProgressBar: document.getElementById('duplicate-progress-bar'),
-    duplicateProgressText: document.getElementById('duplicate-progress-text'),
-    duplicateLogContainer: document.getElementById('duplicate-log-container'),
-    duplicateNextStepContainer: document.getElementById('duplicate-next-step-container'),
-    duplicateNextStepBtn: document.getElementById('duplicate-next-step-btn'),
-
-    // Etapa 2.5 (Ajuste)
-    step2_5Adjustment: document.getElementById('step-2-5-adjustment'),
-    duplicateAdjustmentContainer: document.getElementById('duplicate-adjustment-container'),
-    adjustmentProcessBtn: document.getElementById('adjustment-process-btn'),
-    adjustmentSkipBtn: document.getElementById('adjustment-skip-btn'),
-
-    // Etapa 3 (Mapeamento)
-    step3Mapping: document.getElementById('step-3-mapping'),
-    mappingContainer: document.getElementById('mapping-container'),
-    nextToConfigBtn: document.getElementById('next-to-config-btn'),
-    
-    // Etapa 4 (Config)
-    step4Config: document.getElementById('step-4-config'),
-    pipelineSelect: document.getElementById('pipeline-select'),
-    stageSelect: document.getElementById('stage-select'),
-    defaultUserSelect: document.getElementById('default-user-select'),
-    verticalRuleColumnSelect: document.getElementById('vertical-column-select'),
-    dealLogicRadios: document.querySelectorAll('input[name="deal-logic"]'),
-    dealLogicStatusOptions: document.getElementById('deal-logic-status-options'),
-    dealLogicStatusWon: document.getElementById('deal-status-won'),
-    dealLogicStatusLost: document.getElementById('deal-status-lost'),
-    dealLogicStatusOpen: document.getElementById('deal-status-open'),
-    dealLogicNotStatusOptions: document.getElementById('deal-logic-not-status-options'),
-    dealLogicNotStatusWon: document.getElementById('deal-not-status-won'),
-    dealLogicNotStatusLost: document.getElementById('deal-not-status-lost'),
-    dealLogicNotStatusOpen: document.getElementById('deal-not-status-open'),
-    backToMappingBtn: document.getElementById('back-to-mapping-btn'),
-    nextToValidationBtn: document.getElementById('next-to-validation-btn'),
-
-    // Etapa 5 (Validação)
-    step5Validation: document.getElementById('step-5-validation'),
-    validationSampleContainer: document.getElementById('validation-sample-container'),
-    validationSettingsSummary: document.getElementById('validation-settings-summary'),
-    validationBackBtn: document.getElementById('validation-back-btn'),
-    validationStartBtn: document.getElementById('validation-start-btn'),
-    validationSampleHeader: document.getElementById('validation-sample-header'),
-    validationSampleBody: document.getElementById('validation-sample-body'),
-
-    // Etapa 6 (Log)
-    step6Log: document.getElementById('step-6-log'),
-    importLoader: document.getElementById('import-loader'),
-    importStatus: document.getElementById('import-status'),
-    progressBar: document.getElementById('progress-bar'),
-    progressText: document.getElementById('progress-text'),
-    logContainer: document.getElementById('log-container'),
-    resetImporterBtn: document.getElementById('reset-importer-btn'),
-    
-    // Aba Gestão de Verticais
-    verticalsContainer: document.getElementById('verticals-container'),
-    verticalsMessage: document.getElementById('verticals-message'),
-    saveVerticalsBtn: document.getElementById('save-verticals-btn'),
-    
-    // Aba Admin
-    adminMessage: document.getElementById('admin-message'),
-    adminTabs: document.querySelectorAll('.admin-tab-btn'),
-    adminTabsSelect: document.getElementById('admin-tabs-select'),
-    adminTabsContent: document.querySelectorAll('#admin-tabs-content > div'),
-
-    // Admin Funis
-    adminPipelinesView: document.getElementById('admin-pipelines-view'),
-    adminPipelinesLoader: document.getElementById('admin-pipelines-loader'),
-    adminPipelinesTableContainer: document.getElementById('admin-pipelines-table-container'),
-    adminPipelinesTableBody: document.getElementById('admin-pipelines-table-body'),
-    adminAddPipelineBtn: document.getElementById('admin-add-pipeline-btn'),
-    
-    // Admin Etapas
-    adminStagesView: document.getElementById('admin-stages-view'),
-    adminStagesLoader: document.getElementById('admin-stages-loader'),
-    adminStagesTableContainer: document.getElementById('admin-stages-table-container'),
-    adminStagesTableBody: document.getElementById('admin-stages-table-body'),
-    adminStagesTitle: document.getElementById('admin-stages-title'),
-    adminAddStageBtn: document.getElementById('admin-add-stage-btn'),
-    adminBackToPipelinesBtn: document.getElementById('admin-back-to-pipelines-btn'),
-    
-    // Admin Produtos
-    adminProductsView: document.getElementById('admin-products-view'),
-    adminProductsLoader: document.getElementById('admin-products-loader'),
-    adminProductsTableContainer: document.getElementById('admin-products-table-container'),
-    adminProductsTableBody: document.getElementById('admin-products-table-body'),
-    adminAddProductBtn: document.getElementById('admin-add-product-btn'),
-
-    // Tipos de Atividade
-    adminActivityTypesView: document.getElementById('admin-activity-types-view'),
-    adminActivityTypesLoader: document.getElementById('admin-activityTypes-loader'),
-    adminActivityTypesTableContainer: document.getElementById('admin-activityTypes-table-container'),
-    adminActivityTypesTableBody: document.getElementById('admin-activityTypes-table-body'),
-    adminAddActivityTypeBtn: document.getElementById('admin-add-activityType-btn'),
-    
-    // Admin Campos
-    adminFieldsView: document.getElementById('admin-fields-view'),
-    adminFieldsLoader: document.getElementById('admin-fields-loader'),
-    adminFieldsTableContainer: document.getElementById('admin-fields-table-container'),
-    adminFieldsTableBody: document.getElementById('admin-fields-table-body'),
-    adminAddFieldBtn: document.getElementById('admin-add-field-btn'),
-    adminFieldEntitySelect: document.getElementById('admin-field-entity-select'),
-
-    // Admin Usuários
-    adminUsersView: document.getElementById('admin-users-view'),
-    adminUsersLoader: document.getElementById('admin-users-loader'),
-    adminUsersTableContainer: document.getElementById('admin-users-table-container'),
-    adminUsersTableBody: document.getElementById('admin-users-table-body'),
-    adminAddUserBtn: document.getElementById('admin-add-user-btn'),
-
-    // Modais
-    adminModal: document.getElementById('admin-modal'),
-    adminModalForm: document.getElementById('admin-modal-form'),
-    adminModalTitle: document.getElementById('admin-modal-title'),
-    adminModalBody: document.getElementById('admin-modal-body'),
-    adminModalSubmitBtn: document.getElementById('admin-modal-submit-btn'),
-    adminModalCancelBtn: document.getElementById('admin-modal-cancel-btn'),
-
-    confirmModal: document.getElementById('confirm-modal'),
-    confirmModalTitle: document.getElementById('confirm-modal-title'),
-    confirmModalBody: document.getElementById('confirm-modal-body'),
-    confirmModalConfirmBtn: document.getElementById('confirm-modal-confirm-btn'),
-    confirmModalCancelBtn: document.getElementById('confirm-modal-cancel-btn'),
+// Objeto DOM será preenchido quando a página carregar
+let dom = {};
 };
 
 // --- FUNÇÕES DE UTILIDADE ---
@@ -1930,44 +1775,209 @@ function hideAdminMessage() {
 }
 
 
-// --- EVENT LISTENERS GLOBAIS ---
-// Ação principal: Ligar o botão de conexão
-dom.connectApiBtn.addEventListener('click', fetchInitialData);
+// --- INICIALIZAÇÃO E EVENT LISTENERS GLOBAIS ---
+window.addEventListener('DOMContentLoaded', () => {
+    
+    // Popula o objeto DOM agora que os elementos existem
+    dom = {
+        apiTokenInput: document.getElementById('api-token'),
+        companyDomainInput: document.getElementById('company-domain'), 
+        connectApiBtn: document.getElementById('connect-api-btn'),
+        apiLoader: document.getElementById('api-loader'),
+        apiMessage: document.getElementById('api-message'),
+        apiConnectSection: document.getElementById('api-connect-section'),
+        globalMessage: document.getElementById('global-message'),
+        mainContent: document.getElementById('main-content'), 
+        
+        // Abas Principais
+        tabs: document.querySelectorAll('.tab-btn'),
+        tabsContent: document.querySelectorAll('#tabs-content > div'),
+        tabImporter: document.getElementById('tab-importer'),
+        tabVerticals: document.getElementById('tab-verticals'),
+        tabAdmin: document.getElementById('tab-admin'),
 
-// Configura as abas
-setupTabs(); 
-setupAdminTabs(); 
-setupImporterSubTabs();
-setupNavigation();
-setupConfigLogic();
+        // Sub-abas do Importador
+        importerSubTabs: document.querySelectorAll('.importer-subtab-btn'),
+        importerSubTabsContent: document.querySelectorAll('#importer-subtabs-content > div'),
 
-// Listeners do Importador
-dom.loadCsvBtn.addEventListener('click', handleFileLoad);
-dom.pipelineSelect.addEventListener('change', handlePipelineChange);
+        // Aba Importador - Etapa 1
+        step1: document.getElementById('step-1-upload'),
+        csvFileInput: document.getElementById('csv-file'),
+        loadCsvBtn: document.getElementById('load-csv-btn'),
+        fileStatus: document.getElementById('file-status'),
+        filePreview: document.getElementById('file-preview'),
+        previewHeader: document.getElementById('preview-header'),
+        previewBody: document.getElementById('preview-body'),
+        
+        // Etapa 2 (Duplicatas)
+        step2Duplicates: document.getElementById('step-2-duplicates'),
+        duplicateLoader: document.getElementById('duplicate-loader'),
+        duplicateStatus: document.getElementById('duplicate-status'),
+        duplicateProgressBar: document.getElementById('duplicate-progress-bar'),
+        duplicateProgressText: document.getElementById('duplicate-progress-text'),
+        duplicateLogContainer: document.getElementById('duplicate-log-container'),
+        duplicateNextStepContainer: document.getElementById('duplicate-next-step-container'),
+        duplicateNextStepBtn: document.getElementById('duplicate-next-step-btn'),
 
-// Listeners da Aba Verticais
-dom.saveVerticalsBtn.addEventListener('click', saveVerticalRules);
+        // Etapa 2.5 (Ajuste)
+        step2_5Adjustment: document.getElementById('step-2-5-adjustment'),
+        duplicateAdjustmentContainer: document.getElementById('duplicate-adjustment-container'),
+        adjustmentProcessBtn: document.getElementById('adjustment-process-btn'),
+        adjustmentSkipBtn: document.getElementById('adjustment-skip-btn'),
 
-// Listeners da Aba Admin
-dom.adminAddPipelineBtn.addEventListener('click', () => openPipelineModal());
-dom.adminBackToPipelinesBtn.addEventListener('click', () => {
-    dom.adminStagesView.classList.add('hidden');
-    dom.adminPipelinesView.classList.remove('hidden');
+        // Etapa 3 (Mapeamento)
+        step3Mapping: document.getElementById('step-3-mapping'),
+        mappingContainer: document.getElementById('mapping-container'),
+        nextToConfigBtn: document.getElementById('next-to-config-btn'),
+        
+        // Etapa 4 (Config)
+        step4Config: document.getElementById('step-4-config'),
+        pipelineSelect: document.getElementById('pipeline-select'),
+        stageSelect: document.getElementById('stage-select'),
+        defaultUserSelect: document.getElementById('default-user-select'),
+        verticalRuleColumnSelect: document.getElementById('vertical-column-select'),
+        dealLogicRadios: document.querySelectorAll('input[name="deal-logic"]'),
+        dealLogicStatusOptions: document.getElementById('deal-logic-status-options'),
+        dealLogicStatusWon: document.getElementById('deal-status-won'),
+        dealLogicStatusLost: document.getElementById('deal-status-lost'),
+        dealLogicStatusOpen: document.getElementById('deal-status-open'),
+        dealLogicNotStatusOptions: document.getElementById('deal-logic-not-status-options'),
+        dealLogicNotStatusWon: document.getElementById('deal-not-status-won'),
+        dealLogicNotStatusLost: document.getElementById('deal-not-status-lost'),
+        dealLogicNotStatusOpen: document.getElementById('deal-not-status-open'),
+        backToMappingBtn: document.getElementById('back-to-mapping-btn'),
+        nextToValidationBtn: document.getElementById('next-to-validation-btn'),
+
+        // Etapa 5 (Validação)
+        step5Validation: document.getElementById('step-5-validation'),
+        validationSampleContainer: document.getElementById('validation-sample-container'),
+        validationSettingsSummary: document.getElementById('validation-settings-summary'),
+        validationBackBtn: document.getElementById('validation-back-btn'),
+        validationStartBtn: document.getElementById('validation-start-btn'),
+        validationSampleHeader: document.getElementById('validation-sample-header'),
+        validationSampleBody: document.getElementById('validation-sample-body'),
+
+        // Etapa 6 (Log)
+        step6Log: document.getElementById('step-6-log'),
+        importLoader: document.getElementById('import-loader'),
+        importStatus: document.getElementById('import-status'),
+        progressBar: document.getElementById('progress-bar'),
+        progressText: document.getElementById('progress-text'),
+        logContainer: document.getElementById('log-container'),
+        resetImporterBtn: document.getElementById('reset-importer-btn'),
+        
+        // Aba Gestão de Verticais
+        verticalsContainer: document.getElementById('verticals-container'),
+        verticalsMessage: document.getElementById('verticals-message'),
+        saveVerticalsBtn: document.getElementById('save-verticals-btn'),
+        
+        // Aba Admin
+        adminMessage: document.getElementById('admin-message'),
+        adminTabs: document.querySelectorAll('.admin-tab-btn'),
+        adminTabsSelect: document.getElementById('admin-tabs-select'),
+        adminTabsContent: document.querySelectorAll('#admin-tabs-content > div'),
+
+        // Admin Funis
+        adminPipelinesView: document.getElementById('admin-pipelines-view'),
+        adminPipelinesLoader: document.getElementById('admin-pipelines-loader'),
+        adminPipelinesTableContainer: document.getElementById('admin-pipelines-table-container'),
+        adminPipelinesTableBody: document.getElementById('admin-pipelines-table-body'),
+        adminAddPipelineBtn: document.getElementById('admin-add-pipeline-btn'),
+        
+        // Admin Etapas
+        adminStagesView: document.getElementById('admin-stages-view'),
+        adminStagesLoader: document.getElementById('admin-stages-loader'),
+        adminStagesTableContainer: document.getElementById('admin-stages-table-container'),
+        adminStagesTableBody: document.getElementById('admin-stages-table-body'),
+        adminStagesTitle: document.getElementById('admin-stages-title'),
+        adminAddStageBtn: document.getElementById('admin-add-stage-btn'),
+        adminBackToPipelinesBtn: document.getElementById('admin-back-to-pipelines-btn'),
+        
+        // Admin Produtos
+        adminProductsView: document.getElementById('admin-products-view'),
+        adminProductsLoader: document.getElementById('admin-products-loader'),
+        adminProductsTableContainer: document.getElementById('admin-products-table-container'),
+        adminProductsTableBody: document.getElementById('admin-products-table-body'),
+        adminAddProductBtn: document.getElementById('admin-add-product-btn'),
+
+        // Tipos de Atividade
+        adminActivityTypesView: document.getElementById('admin-activity-types-view'),
+        adminActivityTypesLoader: document.getElementById('admin-activityTypes-loader'),
+        adminActivityTypesTableContainer: document.getElementById('admin-activityTypes-table-container'),
+        adminActivityTypesTableBody: document.getElementById('admin-activityTypes-table-body'),
+        adminAddActivityTypeBtn: document.getElementById('admin-add-activityType-btn'),
+        
+        // Admin Campos
+        adminFieldsView: document.getElementById('admin-fields-view'),
+        adminFieldsLoader: document.getElementById('admin-fields-loader'),
+        adminFieldsTableContainer: document.getElementById('admin-fields-table-container'),
+        adminFieldsTableBody: document.getElementById('admin-fields-table-body'),
+        adminAddFieldBtn: document.getElementById('admin-add-field-btn'),
+        adminFieldEntitySelect: document.getElementById('admin-field-entity-select'),
+
+        // Admin Usuários
+        adminUsersView: document.getElementById('admin-users-view'),
+        adminUsersLoader: document.getElementById('admin-users-loader'),
+        adminUsersTableContainer: document.getElementById('admin-users-table-container'),
+        adminUsersTableBody: document.getElementById('admin-users-table-body'),
+        adminAddUserBtn: document.getElementById('admin-add-user-btn'),
+
+        // Modais
+        adminModal: document.getElementById('admin-modal'),
+        adminModalForm: document.getElementById('admin-modal-form'),
+        adminModalTitle: document.getElementById('admin-modal-title'),
+        adminModalBody: document.getElementById('admin-modal-body'),
+        adminModalSubmitBtn: document.getElementById('admin-modal-submit-btn'),
+        adminModalCancelBtn: document.getElementById('admin-modal-cancel-btn'),
+
+        confirmModal: document.getElementById('confirm-modal'),
+        confirmModalTitle: document.getElementById('confirm-modal-title'),
+        confirmModalBody: document.getElementById('confirm-modal-body'),
+        confirmModalConfirmBtn: document.getElementById('confirm-modal-confirm-btn'),
+        confirmModalCancelBtn: document.getElementById('confirm-modal-cancel-btn'),
+    };
+    
+    // Agora, anexa os event listeners
+    
+    // Ação principal: Ligar o botão de conexão
+    dom.connectApiBtn.addEventListener('click', fetchInitialData);
+    
+    // Configura as abas
+    setupTabs(); 
+    setupAdminTabs(); 
+    setupImporterSubTabs();
+    setupNavigation();
+    setupConfigLogic();
+
+    // Listeners do Importador
+    dom.loadCsvBtn.addEventListener('click', handleFileLoad);
+    dom.pipelineSelect.addEventListener('change', handlePipelineChange);
+
+    // Listeners da Aba Verticais
+    dom.saveVerticalsBtn.addEventListener('click', saveVerticalRules);
+    
+    // Listeners da Aba Admin
+    dom.adminAddPipelineBtn.addEventListener('click', () => openPipelineModal());
+    dom.adminBackToPipelinesBtn.addEventListener('click', () => {
+        dom.adminStagesView.classList.add('hidden');
+        dom.adminPipelinesView.classList.remove('hidden');
+    });
+    dom.adminAddStageBtn.addEventListener('click', () => {
+        const pipelineId = dom.adminAddStageBtn.dataset.pipelineId;
+        openStageModal(null, pipelineId);
+    });
+    dom.adminAddProductBtn.addEventListener('click', () => openProductModal());
+    dom.adminAddActivityTypeBtn.addEventListener('click', () => openActivityTypeModal());
+    dom.adminFieldEntitySelect.addEventListener('change', () => loadFieldsAdmin());
+    dom.adminAddFieldBtn.addEventListener('click', () => openFieldModal());
+    dom.adminAddUserBtn.addEventListener('click', () => openUserModal());
+    
+    // Listeners Modais
+    dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
+    dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
-dom.adminAddStageBtn.addEventListener('click', () => {
-    const pipelineId = dom.adminAddStageBtn.dataset.pipelineId;
-    openStageModal(null, pipelineId);
 });
-dom.adminAddProductBtn.addEventListener('click', () => openProductModal());
-dom.adminAddActivityTypeBtn.addEventListener('click', () => openActivityTypeModal());
-dom.adminFieldEntitySelect.addEventListener('change', () => loadFieldsAdmin());
-dom.adminAddFieldBtn.addEventListener('click', () => openFieldModal());
-dom.adminAddUserBtn.addEventListener('click', () => openUserModal());
 
-// Listeners Modais
-dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
-dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
-});
 
 
 
