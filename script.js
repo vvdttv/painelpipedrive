@@ -1931,44 +1931,44 @@ function hideAdminMessage() {
 
 
 // --- EVENT LISTENERS GLOBAIS ---
-window.addEventListener('DOMContentLoaded', () => {
-    // Ação principal: Ligar o botão de conexão
-    dom.connectApiBtn.addEventListener('click', fetchInitialData);
-    
-    // Configura as abas
-    setupTabs(); 
-    setupAdminTabs(); 
-    setupImporterSubTabs();
-    setupNavigation();
-    setupConfigLogic();
+// Ação principal: Ligar o botão de conexão
+dom.connectApiBtn.addEventListener('click', fetchInitialData);
 
-    // Listeners do Importador
-    dom.loadCsvBtn.addEventListener('click', handleFileLoad);
-    dom.pipelineSelect.addEventListener('change', handlePipelineChange);
+// Configura as abas
+setupTabs(); 
+setupAdminTabs(); 
+setupImporterSubTabs();
+setupNavigation();
+setupConfigLogic();
 
-    // Listeners da Aba Verticais
-    dom.saveVerticalsBtn.addEventListener('click', saveVerticalRules);
-    
-    // Listeners da Aba Admin
-    dom.adminAddPipelineBtn.addEventListener('click', () => openPipelineModal());
-    dom.adminBackToPipelinesBtn.addEventListener('click', () => {
-        dom.adminStagesView.classList.add('hidden');
-        dom.adminPipelinesView.classList.remove('hidden');
-    });
-    dom.adminAddStageBtn.addEventListener('click', () => {
-        const pipelineId = dom.adminAddStageBtn.dataset.pipelineId;
-        openStageModal(null, pipelineId);
-    });
-    dom.adminAddProductBtn.addEventListener('click', () => openProductModal());
-    dom.adminAddActivityTypeBtn.addEventListener('click', () => openActivityTypeModal());
-    dom.adminFieldEntitySelect.addEventListener('change', () => loadFieldsAdmin());
-    dom.adminAddFieldBtn.addEventListener('click', () => openFieldModal());
-    dom.adminAddUserBtn.addEventListener('click', () => openUserModal());
-    
-    // Listeners Modais
-    dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
-    dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
+// Listeners do Importador
+dom.loadCsvBtn.addEventListener('click', handleFileLoad);
+dom.pipelineSelect.addEventListener('change', handlePipelineChange);
+
+// Listeners da Aba Verticais
+dom.saveVerticalsBtn.addEventListener('click', saveVerticalRules);
+
+// Listeners da Aba Admin
+dom.adminAddPipelineBtn.addEventListener('click', () => openPipelineModal());
+dom.adminBackToPipelinesBtn.addEventListener('click', () => {
+    dom.adminStagesView.classList.add('hidden');
+    dom.adminPipelinesView.classList.remove('hidden');
 });
+dom.adminAddStageBtn.addEventListener('click', () => {
+    const pipelineId = dom.adminAddStageBtn.dataset.pipelineId;
+    openStageModal(null, pipelineId);
+});
+dom.adminAddProductBtn.addEventListener('click', () => openProductModal());
+dom.adminAddActivityTypeBtn.addEventListener('click', () => openActivityTypeModal());
+dom.adminFieldEntitySelect.addEventListener('change', () => loadFieldsAdmin());
+dom.adminAddFieldBtn.addEventListener('click', () => openFieldModal());
+dom.adminAddUserBtn.addEventListener('click', () => openUserModal());
+
+// Listeners Modais
+dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
+dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
+});
+
 
 
 
