@@ -42,7 +42,6 @@ let distributionRules = {}; // { userId: [vertical1, vertical2], ... } -> Vertic
 // --- ELEMENTOS DO DOM ---
 // Objeto DOM será preenchido quando a página carregar
 let dom = {};
-};
 
 // --- FUNÇÕES DE UTILIDADE ---
 
@@ -1976,7 +1975,7 @@ window.addEventListener('DOMContentLoaded', () => {
     dom.adminModalCancelBtn.addEventListener('click', () => dom.adminModal.classList.add('hidden'));
     dom.confirmModalCancelBtn.addEventListener('click', () => dom.confirmModal.classList.add('hidden'));
 });
-});
+
 
 
 
